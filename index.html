@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>citymap</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<link type="text/css" rel="stylesheet" href="./css/main.css">
+</head>
+
+<body>
+	<div class="title" style="position: absolute;width:100px;height:30px;left:10px;top:10px;">CITY MAP</div>
+
+	<div id="container"></div>
+	<canvas id="canvas_label"></canvas>
+
+	<div class="info-panel">
+		<div class="info-panel-header">
+			<img class="close" src="/images/icn-close.svg" alt="">
+		</div>
+		<div class="info-panel-content" style="transform: translate3d(0px, -60px, 0px);">
+			<div class="info-panel-content-wrapper">
+				<img id="panel_image" class="info-panel-image" src="/images/img-lumen.jpg" alt="">
+				<h2 id="panel_title" class="info-panel-title">咖啡</h2>
+				<p id="panel_description" class="info-panel-description">
+					诚邀您探索其快捷菜单使用手工制品的自发菜肴，简单地放在盘子里、
+					粘土碗里或依偎在一起在两片佛卡夏之间。在这里，您将找到该地区
+					最好的烹饪传统。全部我们的饮料是手工制作的，有精选的手工苹果
+					酒、啤酒、葡萄酒和自制非酒精饮料。我们的咖啡是刚烤好的。我们
+					是该地区绿道上的一站，Voie Verte步行道和自行车道，提供外卖服务。
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../three/build/three.module.js",
+					"three/addons/": "./three/examples/jsm/"
+				}
+			}
+	</script>
+
+	<script type="module">
+
+		import * as THREE from 'three';
+
+		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+		import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+		import { HDRCubeTextureLoader } from 'three/addons/loaders/HDRCubeTextureLoader.js';
+
+
+		let camera, controls;
+		let renderer;
+		let scene;
+		let arrSprite = [];
+		let mouse = {
+			x: 0, y: 0
+		};
+		let currentName = 0;
+
+		let texture = new THREE.TextureLoader().load("../images/biao.png");
+
+		const objArr = [{
+			a: 'lou1_mesh', b: 'lou1_point'
+		}, {
+			a: 'lou2_mesh', b: 'lou2_point'
+		}, {
+			a: 'lou3_mesh', b: 'lou3_point'
+		}, {
+			a: 'lou4_mesh', b: 'lou4_point'
+		}, {
+			a: 'lou5_mesh', b: 'lou5_point'
+		}, {
+			a: 'lou6_mesh', b: 'lou6_point'
+		}, {
+			a: 'lou7_mesh', b: 'lou7_point'
+		}, {
+			a: 'lou9_mesh', b: 'lou9_point'
+		}]
+
+		let dataMark = [
+			{
+				id: 1,
+				name: 1,
+				position: "",
+				infopng: "./images/tower.png",
+				infoname: "MR.Bigの塔<br>The Tower of MR.Big",
+				infodes: `
+					MR.Bigの像は永遠にこの高塔の上に安置されている。塔の上の鷹は敵への威圧を象徴している。MR.Bigの「偉大な功績」は人民に永遠に忘れられることはない。
+                    MR.Bigはすべての人々を見守り、すべての自分の人民を愛し、すべての敵を打ち倒すだろう。この塔は決して倒れることはない。それは「MR.Big」が永遠に存在し続けるのと同じである。
+					<br><br>
+					The statue of MR. Big is eternally placed atop the great tower. The eagle on the tower symbolizes a threat to enemies. The "great deeds" of MR. Big will never be forgotten by the people.
+                    MR. Big watches over everyone, loves all his people, and defeats all his enemies. The tower will stand forever, just as "MR. Big" will exist eternally.
+				`
+			},
+			{
+				id: 2,
+				name: 2,
+				position: "",
+				infopng: "./images/palace.png",
+				infoname: "大広場<br>The Grand Square",
+				infodes: `
+					毎日、人々は広場に集まり、「MR.BIG」を讃える。
+					しかし、広場の後方からMR.Bigの塔へ進むことができるのは一部の人だけである。MR.Bigの塔に入ることができた者は「MR.BIG」から表彰され、それは栄誉の象徴とされる。
+					<br><br>
+					Every day, people gather in the square to sing praises of "MR.BIG." However, not everyone is allowed to enter the rear of the square to reach the Tower of MR.Big.
+					Those who gain access to the Tower of MR.Big receive recognition from "MR.BIG," a symbol of honor.
+				`
+			},
+			{
+				id: 3,
+				name: 3,
+				position: "",
+				infopng: "./images/truth.jpg",
+				infoname: "真理ビル<br>The Truth Tower",
+				infodes: `
+					ここでは毎日、「MR.Big」が語る真理をテストすることが義務付けられている。「MR.Big」の真理に疑問を抱く者は反抗者と見なされ、排除される。
+					<br><br>
+					Every day, tests are conducted here on the "truth" proclaimed by MR. Big. Anyone who questions MR. Big's truth will be considered a rebel and eliminated.
+				`
+			},
+			{
+				id: 4,
+				name: 4,
+				position: "",
+				infopng: "./images/tower.jpg",
+				infoname: "ミラーワールドの城塞<br>Citadel of the Mirrored World",
+				infodes: `
+				それは世界の鏡像であり、至る所に存在し、すべてを知ることができる。人々の最も隠された内面を含め、あらゆる場所を覗き見ることができる。
+			    <br><br>
+				It is the mirror image of the world, omnipresent and omniscient, capable of peering into every corner, including the most hidden depths of people's inner worlds.
+				`
+			},
+			{
+				id: 5,
+				name: 5,
+				position: "",
+				infopng: "./images/tower.jpg",
+				infoname: "ミラーワールドの城塞<br>Citadel of the Mirrored World",
+				infodes: `
+				それは世界の鏡像であり、至る所に存在し、すべてを知ることができる。人々の最も隠された内面を含め、あらゆる場所を覗き見ることができる。
+			    <br><br>
+				It is the mirror image of the world, omnipresent and omniscient, capable of peering into every corner, including the most hidden depths of people's inner worlds.
+				`
+			},
+			{
+				id: 6,
+				name: 6,
+				position: "",
+				infopng: "./images/tower.jpg",
+				infoname: "ミラーワールドの城塞<br>Citadel of the Mirrored World",
+				infodes: `
+				それは世界の鏡像であり、至る所に存在し、すべてを知ることができる。人々の最も隠された内面を含め、あらゆる場所を覗き見ることができる。
+			    <br><br>
+				It is the mirror image of the world, omnipresent and omniscient, capable of peering into every corner, including the most hidden depths of people's inner worlds.
+				`
+			},
+			{
+				id: 8,
+				name: 8,
+				position: "",
+				infopng: "./images/remains.png",
+				infoname: "8",
+				infodes: `
+				内容8
+				`
+			},
+			
+			{
+				id: 9,
+				name: 9,
+				position: {
+					x:-70,y:33,z:135
+				},
+				infopng: "./images/resi.png",
+				infoname: "89",
+				infodes: `
+				内容9
+				`
+			}
+		];
+
+
+
+		init();
+		function init() {
+
+			const container = document.getElementById('container');
+
+			renderer = new THREE.WebGLRenderer(
+				{
+					antialias: true,
+					logarithmicDepthBuffer: true,
+					// alpha: true
+				}
+			);
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			container.appendChild(renderer.domElement);
+
+			//点击标签显示信息
+			const onDocumentClick = (event) => {
+				mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+				mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+				//发出射线，选中物体
+				let raycaster = new THREE.Raycaster();
+				raycaster.setFromCamera(mouse, camera);
+				let intersects = raycaster.intersectObjects(arrSprite, true);
+
+
+				if (intersects.length > 0) {
+					let object = intersects[0].object;
+					let tname = object.name;
+					// console.log(object.name);
+
+					const panel = document.querySelector('.info-panel');
+
+					if (currentName != tname) {
+						for (let i = 0; i < dataMark.length; i++) {
+
+							let data = dataMark[i];
+							let name = data.name;
+
+							if (name == tname) {
+								let infopng = data.infopng;
+								let infoname = data.infoname;
+								let infodes = data.infodes;
+
+								const panel_image = document.querySelector('#panel_image');
+								panel_image.src = infopng;
+
+								const panel_title = document.querySelector('#panel_title');
+								panel_title.innerHTML = infoname;
+
+								const panel_description = document.querySelector('#panel_description');
+								panel_description.innerHTML = infodes;
+
+								currentName = name;
+							}
+
+						}
+
+						panel.style.right = '0';
+					} else {
+						currentName = 0;
+						panel.style.right = '-33%';
+					}
+
+				}
+
+				event.preventDefault();
+			}
+			container.addEventListener('click', onDocumentClick, false);
+
+			//关闭信息
+			const onDocumentClose = (event) => {
+				currentName = 0;
+
+				const panel = document.querySelector('.info-panel');
+				panel.style.right = '-33%';
+			}
+			const close = document.querySelector('.close');
+			close.addEventListener('click', onDocumentClose, false);
+
+			scene = new THREE.Scene();
+			scene.background = new THREE.Color("#CDC1C5");//背景颜色，颜色号
+			// scene.background = new THREE.Color(0x2a4788);
+
+			camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
+			camera.position.set(-308, 269, 582);
+
+			controls = new OrbitControls(camera, renderer.domElement);
+			controls.target.set(0, 6, 0);
+
+			window.addEventListener('resize', onWindowResize);
+
+			let directionalLight = new THREE.DirectionalLight(parseInt('ffffff', 16), 5);
+			directionalLight.position.set(15, 30, 30);
+			scene.add(directionalLight);
+			directionalLight.lookAt(new THREE.Vector3(12, 5, -4));
+
+			new RGBELoader().load('./images/HDR.hdr', texture => {
+				texture.mapping = THREE.EquirectangularRefractionMapping;
+				scene.environment = texture;
+				renderer.toneMapping = THREE.ACESFilmicToneMapping;
+				renderer.toneMappingExposure = 0.5;
+
+				loadModel();
+			});
+
+
+		}
+
+		//图标
+		function createSprite() {
+
+			let material = new THREE.SpriteMaterial({
+				map: texture,
+				side: 2,
+				transparent: true,
+				depthTest: false,
+				depthWrite: false,
+			});
+			material.needsUpdate = true;
+
+			let sprite = new THREE.Sprite(material);
+			let spriteSize = 15;
+			sprite.scale.set(spriteSize, spriteSize, 1);
+			return sprite;
+		}
+
+		//模型
+		function loadModel() {
+
+			const loader = new GLTFLoader();
+			let dracoLoader = new DRACOLoader();
+			dracoLoader.setDecoderPath("../libs/draco/");
+			loader.setDRACOLoader(dracoLoader);
+			loader.load("./models/model.glb", (gltf) => {
+				let model = gltf.scene;
+				scene.add(model);
+
+				// 复制模型
+				objArr.forEach(item => {
+					const object = model.getObjectByName(item.a)
+					model.traverse(obj => {
+						if (obj.name.includes(item.b)) {
+							const copy = new THREE.InstancedMesh(object.geometry, object.material, 1)
+							copy.scale.copy(obj.scale)
+							copy.position.copy(obj.position)
+							copy.rotation.copy(obj.rotation)
+							copy.name = item.a
+							scene.add(copy)
+						}
+					})
+				})
+
+				//获取图标位置
+				model.traverse(obj => {
+					// 获取楼顶的顶点信息，并设置图标的坐标
+					if (obj.name.includes('top')) {
+						let topid = obj.name.replace("top", "") - 0;
+
+						for (let i = 0; i < dataMark.length; i++) {
+
+							let data = dataMark[i];
+							let id = data.id;
+							let name = data.name;
+
+							if (topid == id) {
+								data.position = obj.position;
+							}
+
+
+						}
+
+					}
+				})
+
+				//设置图标
+				for (let i = 0; i < dataMark.length; i++) {
+
+					let data = dataMark[i];
+					let name = data.name;
+					let position = data.position;
+
+					let sprite = createSprite();
+					sprite.name = name;
+					sprite.position.set(position.x, position.y, position.z);
+					arrSprite.push(sprite);
+					scene.add(sprite);
+
+				}
+
+				renderer.setAnimationLoop(animate);
+
+			});
+		}
+
+		function onWindowResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+
+		function animate() {
+			controls.update();
+			renderer.render(scene, camera);
+		}
+
+	</script>
+</body>
+
+</html>
