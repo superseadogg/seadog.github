@@ -319,7 +319,7 @@
 
 			const loader = new GLTFLoader();
 			let dracoLoader = new DRACOLoader();
-			dracoLoader.setDecoderPath("/seadog.github/libs/draco/");
+			dracoLoader.setDecoderPath("https://superseadogg.github.io/seadog.github/libs/draco/");
 			loader.setDRACOLoader(dracoLoader);
 			loader.load("/seadog.github/models/model.glb", (gltf) => {
 				let model = gltf.scene;
